@@ -15,9 +15,10 @@ use wordless_api::WordlessApi;
 async fn main() {
     let args: Vec<String> = env::args().collect();
     
-    // Check if enough arguments are passed (expecting IP and port)
+    // Check if enough arguments are passed (expecting LISTEN_IP and LISTEN_PORT)
     if args.len() != 3 {
-        eprintln!("Usage: {} <IP> <PORT>", args[0]);
+        eprintln!("Usage: {} <LISTEN_IP> <LISTEN_PORT>", args[0]);
+        eprintln!("(version {})", WordlessApi::version());
         return;
     }
 
@@ -29,33 +30,41 @@ async fn main() {
     let static_files = warp::fs::dir("wwwroot");
 
     let health_check = warp::path!("api" / "healthcheck")
+        .and(warp::get())
         .map(|| {
             let response = HealthCheckResponse {
-                alive: true   
+                alive: true,
+                version: WordlessApi::version()
             };
             warp::reply::json(&response)
         });
 
     let get_random_word = warp::path!("api" / "randomword")
+        .and(warp::get())
         .map(|| {
             let response = GetWordResponse {
-                word: WordlessApi::get_random_word(-1)
+                word: WordlessApi::get_random_word(-1),
+                version: WordlessApi::version()
             };
             warp::reply::json(&response)
         });
 
     let get_word = warp::path!("api" / "getword" / i32)
+        .and(warp::get())
         .map(| days_ago: i32 | {
             let response = GetWordResponse {
-                word: WordlessApi::get_random_word(days_ago)
+                word: WordlessApi::get_random_word(days_ago),
+                version: WordlessApi::version()
             };
             warp::reply::json(&response)
         });
 
     let check_word = warp::path!("api" / "checkword" / String)
+        .and(warp::get())
         .map(| word : String | {
             let response = WordExistsResponse {
-                exists: WordlessApi::word_list().contains( &&*word )
+                exists: WordlessApi::word_list().contains( &&*word ),
+                version: WordlessApi::version()
             };
             warp::reply::json(&response)
         });
@@ -65,7 +74,8 @@ async fn main() {
         .and(warp::body::json::<QueryMatchCountRequest>())
         .map(|request_params: QueryMatchCountRequest| {
             let response = QueryMatchCountResponse {
-                count: WordlessApi::count_matches( WordlessApi::word_list(), &request_params.answer, &request_params.guesses)
+                count: WordlessApi::count_compatible_words( WordlessApi::word_list(), &request_params.answer, &request_params.guesses),
+                version: WordlessApi::version()
             };
             warp::reply::json(&response)
         });

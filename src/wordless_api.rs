@@ -4,17 +4,20 @@ use rand::Rng;
 
 #[derive(Serialize)]
 pub struct HealthCheckResponse {
-    pub alive: bool
+    pub alive: bool,
+    pub version: String
 }
 
 #[derive(Serialize)]
 pub struct GetWordResponse {
-    pub word: String
+    pub word: String,
+    pub version: String
 }
 
 #[derive(Serialize)]
 pub struct WordExistsResponse {
-    pub exists: bool
+    pub exists: bool,
+    pub version: String
 }
 
 #[derive(Deserialize)]
@@ -25,7 +28,8 @@ pub struct QueryMatchCountRequest {
 
 #[derive(Serialize)]
 pub struct QueryMatchCountResponse {
-    pub count: u32
+    pub count: u32,
+    pub version: String
 }
 
 
@@ -33,13 +37,22 @@ pub struct WordlessApi {}
 
 impl WordlessApi 
 {
-    pub fn is_word_compatible_with_clues( test_word : &str, answer : &str, guess : &str) -> bool {
+    pub fn version() ->String  {
+        return format!("rust-{}", env!("CARGO_PKG_VERSION"));
+    }
+
+    fn is_word_compatible_with_guess( test_word : &str, answer : &str, guess : &str) -> bool {
+        if test_word.len() != answer.len() || answer.len()  != guess.len() 
+        {
+            return false;
+        }
+
         for i in 0..test_word.len() 
-       { 
+        { 
             // get the guess, answer, and test_word characters for the current column
-            let g : &str = &guess[i..i+1];
-            let a : &str = &answer[i..i+1];
-            let t : &str = &test_word[i..i+1];
+            let g = &guess[i..i+1];
+            let a = &answer[i..i+1];
+            let t = &test_word[i..i+1];
 
             // guess character matches answer in this columm (its "green")
             if a == g
@@ -72,26 +85,26 @@ impl WordlessApi
        return true;
     }
 
-    pub fn count_matches( candidate_words : &[&str], answer : &str, guesses: &Vec<String> ) -> u32{
-        let mut match_count:u32 = 0;
+    pub fn count_compatible_words( candidate_words : &[&str], answer : &str, guesses: &Vec<String> ) -> u32{
+        let mut compatible_count:u32 = 0;
         for candidate in candidate_words 
         {
-            let mut final_is_match : bool = true;
+            let mut compatible_with_all = true;
             for guess in guesses 
             {
-                if !Self::is_word_compatible_with_clues( candidate, answer, guess )
+                if !Self::is_word_compatible_with_guess( candidate, answer, guess )
                 {
-                    final_is_match = false;
+                    compatible_with_all = false;
                     break;
                 }
             }
 
-            if final_is_match
+            if compatible_with_all
             {
-                match_count+=1;
+                compatible_count+=1;
             }
         }
-        return match_count;
+        return compatible_count;
     }
 
     pub fn get_random_word( _days_ago : i32 ) -> String{
