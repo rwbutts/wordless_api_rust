@@ -1,49 +1,17 @@
-use serde::{Deserialize, Serialize};
-use rand::Rng;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
+pub struct Handlers {}
 
-#[derive(Serialize)]
-pub struct HealthCheckResponse {
-    pub alive: bool,
-    pub version: String
+pub fn version() ->String  {
+    return format!("rust-{}", env!("CARGO_PKG_VERSION"));
 }
 
-#[derive(Serialize)]
-pub struct GetWordResponse {
-    pub word: String,
-    pub version: String
-}
-
-#[derive(Serialize)]
-pub struct WordExistsResponse {
-    pub exists: bool,
-    pub version: String
-}
-
-#[derive(Deserialize)]
-pub struct QueryMatchCountRequest {
-    pub answer: String,
-    pub guesses: Vec<String>
-}
-
-#[derive(Serialize)]
-pub struct QueryMatchCountResponse {
-    pub count: u32,
-    pub version: String
-}
-
-
-pub struct WordlessApi {}
-
-impl WordlessApi 
+impl Handlers 
 {
-    pub fn version() ->String  {
-        return format!("rust-{}", env!("CARGO_PKG_VERSION"));
-    }
-
     fn is_word_compatible_with_guess( test_word : &str, answer : &str, guess : &str) -> bool {
         if test_word.len() != answer.len() || answer.len()  != guess.len() 
         {
+            eprintln!("WARNING: WordlessApi::is_word_compatible_with_guess() test_word, answer, and guess are not same length!");
             return false;
         }
 
@@ -107,11 +75,20 @@ impl WordlessApi
         return compatible_count;
     }
 
-    pub fn get_random_word( _days_ago : i32 ) -> String{
+    pub fn get_daily_word( days_ago : i32 ) -> String{
         let words = Self::word_list();
-        let mut rng = rand::thread_rng();
-        let i: usize = rng.gen_range(0..words.len()) as usize;
-        return words[i].to_string();
+        let num_words = words.len();
+
+        let index: usize;
+        if days_ago < 0 
+        {
+             index = rand::thread_rng().gen_range(0..num_words) as usize;
+        }
+        else
+        {
+            index = StdRng::seed_from_u64(days_ago as u64).gen_range(0..num_words) as usize;
+        }
+        return words[index].to_string();
     }
 
     pub fn word_list() -> &'static [&'static str] { 
