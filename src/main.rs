@@ -1,17 +1,14 @@
 
 mod api_handlers;
-mod api_response;
-mod api_request;
+//mod api_response;
+//mod api_request;
 
 use std::net::IpAddr;
 use std::env;
 use warp::Filter;
 use api_handlers::version;
-use api_response::HealthCheckResponse;
-use api_response::GetWordResponse;
-use api_response::WordExistsResponse;
-use api_response::QueryMatchCountResponse;
-use api_request::QueryMatchCountRequest;
+use api_handlers::HealthCheckResponse;
+use api_handlers::QueryMatchCountRequest;
 use api_handlers::Handlers;
 
 const HTTP_VERSION_HEADER: &str = "X-Wordless-Api-Version";
@@ -43,21 +40,21 @@ async fn main() {
     let get_random_word = warp::path!("api" / "randomword")
         .and(warp::get())
         .map(|| {
-            let response = GetWordResponse::new(Handlers::get_daily_word(-1));
+            let response = Handlers::get_daily_word(-1);
             warp::reply::json(&response)
         });
 
     let get_word = warp::path!("api" / "getword" / i32)
         .and(warp::get())
         .map(| days_ago: i32 | {
-            let response = GetWordResponse::new(Handlers::get_daily_word(days_ago));
+            let response = Handlers::get_daily_word(days_ago);
             warp::reply::json(&response)
         });
 
     let check_word = warp::path!("api" / "checkword" / String)
         .and(warp::get())
         .map(| word : String | {
-            let response = WordExistsResponse::new(Handlers::word_list().contains( &&*word ));
+            let response = Handlers::check_word_exists( &word );
             warp::reply::json(&response)
         });
 
@@ -65,7 +62,7 @@ async fn main() {
         .and(warp::post())
         .and(warp::body::json::<QueryMatchCountRequest>())
         .map(|request_params: QueryMatchCountRequest| {
-            let response = QueryMatchCountResponse::new(Handlers::count_compatible_words( Handlers::word_list(), &request_params.answer, &request_params.guesses));
+            let response = Handlers::count_compatible_words(&request_params);
             warp::reply::json(&response)
         });
 

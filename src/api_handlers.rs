@@ -1,4 +1,36 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use serde::{Serialize,Deserialize};
+
+#[derive(Serialize)]
+pub struct HealthCheckResponse {
+    pub alive: bool,
+}
+impl HealthCheckResponse { pub fn new() -> Self { Self {alive: true}}}
+
+#[derive(Serialize)]
+pub struct GetWordResponse {
+    pub word: String,
+}
+impl GetWordResponse { pub fn new(word: String) -> Self { Self {word: word}}}
+
+#[derive(Serialize)]
+pub struct WordExistsResponse {
+    pub exists: bool,
+}
+impl WordExistsResponse { pub fn new(exists: bool) -> Self { Self {exists: exists}}}
+
+#[derive(Serialize)]
+pub struct QueryMatchCountResponse {
+    pub count: u32
+}
+impl QueryMatchCountResponse { pub fn new(count: u32) -> Self { Self {count: count}}}
+
+#[derive(Deserialize)]
+pub struct QueryMatchCountRequest {
+    pub answer: String,
+    pub guesses: Vec<String>
+}
+
 
 pub struct Handlers {}
 
@@ -53,14 +85,14 @@ impl Handlers
        return true;
     }
 
-    pub fn count_compatible_words( candidate_words : &[&str], answer : &str, guesses: &Vec<String> ) -> u32{
+    pub fn count_compatible_words( params: &QueryMatchCountRequest ) -> QueryMatchCountResponse {
         let mut compatible_count:u32 = 0;
-        for candidate in candidate_words 
+        for candidate in Self::word_list() 
         {
             let mut compatible_with_all = true;
-            for guess in guesses 
+            for guess in &params.guesses 
             {
-                if !Self::is_word_compatible_with_guess( candidate, answer, guess )
+                if !Self::is_word_compatible_with_guess( candidate, &params.answer, &guess )
                 {
                     compatible_with_all = false;
                     break;
@@ -72,10 +104,10 @@ impl Handlers
                 compatible_count+=1;
             }
         }
-        return compatible_count;
+        return QueryMatchCountResponse::new(compatible_count);
     }
 
-    pub fn get_daily_word( days_ago : i32 ) -> String{
+    pub fn get_daily_word( days_ago : i32 ) -> GetWordResponse {
         let words = Self::word_list();
         let num_words = words.len();
 
@@ -88,7 +120,11 @@ impl Handlers
         {
             index = StdRng::seed_from_u64(days_ago as u64).gen_range(0..num_words) as usize;
         }
-        return words[index].to_string();
+        return GetWordResponse::new(words[index].to_string());
+    }
+
+    pub fn check_word_exists( word: &str ) -> WordExistsResponse {
+        return WordExistsResponse::new(Self::word_list().contains( &word ));
     }
 
     pub fn word_list() -> &'static [&'static str] { 
