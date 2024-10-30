@@ -34,10 +34,6 @@ pub struct QueryMatchCountRequest {
 
 pub struct Handlers {}
 
-pub fn version() ->String  {
-    return format!("rust-{}", env!("CARGO_PKG_VERSION"));
-}
-
 impl Handlers 
 {
     fn is_word_compatible_with_guess( test_word : &str, answer : &str, guess : &str) -> bool {

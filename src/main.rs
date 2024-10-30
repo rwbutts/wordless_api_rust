@@ -1,17 +1,17 @@
 
 mod api_handlers;
-//mod api_response;
-//mod api_request;
 
 use std::net::IpAddr;
 use std::env;
 use warp::Filter;
-use api_handlers::version;
 use api_handlers::HealthCheckResponse;
 use api_handlers::QueryMatchCountRequest;
 use api_handlers::Handlers;
 
 const HTTP_VERSION_HEADER: &str = "X-Wordless-Api-Version";
+pub fn version() ->String  {
+    return format!("rust-{}", env!("CARGO_PKG_VERSION"));
+}
 
 #[tokio::main]
 async fn main() {
